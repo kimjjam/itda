@@ -1,0 +1,26 @@
+services:
+  - type: web
+    name: itda-api
+    runtime: python
+    rootDir: backend
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: BLOB_READ_WRITE_TOKEN
+        sync: false
+      - key: KOSIS_API_KEY
+        sync: false
+      - key: EXIM_EXCHANGE_API_KEY
+        sync: false
+      - key: LLM_API_KEY
+        sync: false
+      - key: LLM_MODEL
+        sync: false
+      - key: LLM_API_BASE_URL
+        sync: false
+      - key: FRONTEND_ORIGIN
+        sync: false
