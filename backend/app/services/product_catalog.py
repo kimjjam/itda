@@ -7,6 +7,69 @@ from app.services.persistence_client import PersistenceClient, PersistenceReadEr
 VERIFIED_AT = "2026-08-31"
 logger = logging.getLogger(__name__)
 
+VI_PRODUCT_COPY: dict[tuple[str, str], dict[str, str]] = {
+    ("OK저축은행", "Hi-OK론"): {
+        "provider": "OK Savings Bank",
+        "name": "Hi-OK Loan",
+        "limit_text": "1–60 triệu KRW",
+        "rate_text": "14,23%–19,99%/năm (tính đến 2026-05-01)",
+        "requirement_text": "Có thể chứng minh thu nhập, điểm NICE từ 300 và áp dụng tiêu chí thẩm định nội bộ.",
+    },
+    ("웰컴저축은행", "웰컴외국인대출"): {
+        "provider": "Welcome Savings Bank",
+        "name": "Khoản vay Welcome dành cho người nước ngoài",
+        "limit_text": "Tối đa 30 triệu KRW",
+        "rate_text": "7,61%–19,90%/năm (tính đến 2026-07-15)",
+        "requirement_text": "Thời hạn cư trú còn ít nhất một tháng, điểm NICE từ 300; điều kiện khác nhau theo thu nhập và kết quả thẩm định.",
+    },
+    ("예가람저축은행", "Oh! YES loan"): {
+        "provider": "Yegaram Savings Bank",
+        "name": "Oh! YES loan",
+        "limit_text": "Tối đa 40 triệu KRW",
+        "rate_text": "11,5%–19,9%/năm",
+        "requirement_text": "Người lao động nước ngoài cư trú tại Hàn Quốc, có thể chứng minh thu nhập; áp dụng tiêu chí thẩm định nội bộ.",
+    },
+    ("KB국민은행", "KB WELCOME PLUS 전세자금대출"): {
+        "provider": "KB Kookmin Bank",
+        "name": "Khoản vay tiền đặt cọc thuê nhà KB WELCOME PLUS",
+        "limit_text": "Tối đa 200 triệu KRW (áp dụng điều kiện bảo lãnh và tiền đặt cọc thuê nhà)",
+        "rate_text": "4,23%–5,74%/năm (phạm vi công bố ngày 2026-08-27)",
+        "requirement_text": "Có thu nhập trong nước từ ba tháng, đủ điều kiện bảo lãnh SGI và đáp ứng yêu cầu chi tiết như thời hạn visa còn lại.",
+    },
+    ("신한은행", "SOL글로벌 전세대출(서울보증_외국인)"): {
+        "provider": "Shinhan Bank",
+        "name": "Khoản vay tiền đặt cọc thuê nhà SOL Global (SGI · người nước ngoài)",
+        "requirement_text": "Tài liệu chính thức hiện hành chỉ xác nhận tên sản phẩm; vui lòng hỏi tổ chức tài chính về điều kiện chi tiết.",
+    },
+    ("광주은행", "TOGETHER외국인신용대출"): {
+        "provider": "Kwangju Bank",
+        "name": "Khoản vay tín chấp TOGETHER dành cho người nước ngoài",
+        "limit_text": "1–50 triệu KRW (công bố ngày 2025-03-31)",
+        "requirement_text": "Người lao động hưởng lương đáp ứng điều kiện, thuộc nhóm người nước ngoài đăng ký cư trú dài hạn hoặc đồng bào đã khai báo cư trú.",
+    },
+    ("전북은행", "JB Bravo KOREA 대출"): {
+        "provider": "Jeonbuk Bank",
+        "name": "JB Bravo KOREA Loan",
+        "requirement_text": "Vui lòng hỏi tổ chức tài chính về đối tượng, hạn mức và lãi suất chi tiết theo loại visa.",
+    },
+    ("부산은행", "BNK웰컴 글로벌대출"): {
+        "provider": "BNK Busan Bank",
+        "name": "BNK Welcome Global Loan",
+        "requirement_text": "Dành cho người lao động nước ngoài; vui lòng hỏi tổ chức tài chính về loại visa, hạn mức và lãi suất.",
+    },
+    ("하나은행", "하나 외국인 EZ Loan"): {
+        "provider": "Hana Bank",
+        "name": "Hana EZ Loan dành cho người nước ngoài",
+        "limit_text": "1–10 triệu KRW",
+        "requirement_text": "Có thẻ đăng ký người nước ngoài; cư trú tại Hàn Quốc và có thu nhập lương tại nơi làm việc hiện tại, mỗi điều kiện từ ba tháng; chỉ định ngân hàng giao dịch ngoại hối. Visa E-9 chỉ áp dụng cho người nhập cảnh lần đầu.",
+    },
+    ("BNK경남은행", "K dream 외국인신용대출"): {
+        "provider": "BNK Kyongnam Bank",
+        "name": "Khoản vay tín chấp K dream dành cho người nước ngoài",
+        "requirement_text": "Dành riêng cho người lao động nước ngoài cư trú tại Hàn Quốc; vui lòng hỏi tổ chức tài chính về loại visa, hạn mức và lãi suất chi tiết.",
+    },
+}
+
 FALLBACK_CATALOG = [
     Product(
         name="Hi-OK론",
@@ -142,7 +205,8 @@ def match_products(
                 if language == "vi"
                 else "공개된 세부 체류자격 조건이 제한적이므로 금융기관 확인이 필요합니다."
             )
-        products.append(product.model_copy(update={"match_reason": reason}))
+        display_copy = VI_PRODUCT_COPY.get((product.provider, product.name), {}) if language == "vi" else {}
+        products.append(product.model_copy(update={**display_copy, "match_reason": reason}))
     return products
 
 

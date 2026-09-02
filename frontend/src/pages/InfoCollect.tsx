@@ -50,9 +50,15 @@ export default function InfoCollect({ initialData, onComplete }: Props) {
   const { t } = useTranslation();
   const [data, setData] = useState(initialData);
   const [step, setStep] = useState(0);
+  const [showPaymentFields, setShowPaymentFields] = useState(false);
+  const [showRemittanceFields, setShowRemittanceFields] = useState(false);
+  const [noRemittance, setNoRemittance] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const isLast = step === STEP_KEYS.length - 1;
+  const hasPaymentEvidence = data.document_categories.includes("telecom") || data.document_categories.includes("insurance");
+  const hasRemittanceEvidence = data.document_categories.includes("remittance");
+  const hasRemittanceDetails = hasRemittanceEvidence && data.remittance_monthly_amount > 0 && data.remittance_months > 0;
 
   const setNumber = (key: keyof ApplicantInput, value: string) => {
     setData((current) => ({ ...current, [key]: Math.max(0, Number(value) || 0) }));
@@ -69,6 +75,7 @@ export default function InfoCollect({ initialData, onComplete }: Props) {
     const hasCurrency = isCurrency(currency);
     if (Object.keys(numericUpdates).length === 0 && !hasCurrency) return false;
 
+    if (category === "remittance") setNoRemittance(false);
     setData((current) => {
       const next = { ...current, ...numericUpdates };
       return {
@@ -77,7 +84,33 @@ export default function InfoCollect({ initialData, onComplete }: Props) {
         document_categories: Array.from(new Set([...next.document_categories, category])),
       };
     });
+    setError("");
     return true;
+  };
+
+  const advance = () => {
+    if (step === 2 && !showPaymentFields && !hasPaymentEvidence) {
+      setError(t("collect.paymentMethodRequired"));
+      return;
+    }
+    if (step === 3 && !noRemittance && !showRemittanceFields && !hasRemittanceDetails) {
+      setError(t("collect.remittanceMethodRequired"));
+      return;
+    }
+    setError("");
+    setStep((current) => current + 1);
+  };
+
+  const selectNoRemittance = () => {
+    setNoRemittance(true);
+    setShowRemittanceFields(false);
+    setError("");
+    setData((current) => ({
+      ...current,
+      remittance_monthly_amount: 0,
+      remittance_months: 0,
+      document_categories: current.document_categories.filter((category) => category !== "remittance"),
+    }));
   };
 
   const submit = async () => {
@@ -111,7 +144,7 @@ export default function InfoCollect({ initialData, onComplete }: Props) {
           <span>{t("collect.progress", { current: step + 1, total: STEP_KEYS.length })}</span>
           <i style={{ width: `${((step + 1) / STEP_KEYS.length) * 100}%` }} />
         </div>
-        <form onSubmit={(event) => { event.preventDefault(); isLast ? void submit() : setStep((current) => current + 1); }}>
+        <form onSubmit={(event) => { event.preventDefault(); isLast ? void submit() : advance(); }}>
           {step === 0 && (
             <fieldset>
               <legend id="step-title">{t("collect.profileQuestion")}</legend>
@@ -124,27 +157,97 @@ export default function InfoCollect({ initialData, onComplete }: Props) {
               <legend id="step-title">{t("collect.employmentQuestion")}</legend>
               <label>{t("collect.employmentMonths")}<input type="number" min="0" max="600" required value={data.employment_months} onChange={(event) => setNumber("employment_months", event.target.value)} /></label>
               <label>{t("collect.monthlyIncome")}<input type="number" min="0" max="100000000" step="10000" required value={data.monthly_income_krw} onChange={(event) => setNumber("monthly_income_krw", event.target.value)} /></label>
-              <EvidenceUpload category="employment" sessionId={data.session_id} onExtracted={applyExtraction} />
+              <EvidenceUpload
+                category="employment"
+                sessionId={data.session_id}
+                onExtracted={applyExtraction}
+                sampleUrl="/samples/employment-demo.pdf"
+                sampleFileName="employment-demo.pdf"
+              />
             </fieldset>
           )}
           {step === 2 && (
             <fieldset>
               <legend id="step-title">{t("collect.paymentsQuestion")}</legend>
-              <label>{t("collect.telecomMonths")}<input type="number" min="0" max="600" required value={data.telecom_paid_months} onChange={(event) => setNumber("telecom_paid_months", event.target.value)} /></label>
-              <EvidenceUpload category="telecom" sessionId={data.session_id} onExtracted={applyExtraction} />
-              <label>{t("collect.insuranceMonths")}<input type="number" min="0" max="600" required value={data.insurance_paid_months} onChange={(event) => setNumber("insurance_paid_months", event.target.value)} /></label>
-              <EvidenceUpload category="insurance" sessionId={data.session_id} onExtracted={applyExtraction} />
+              <p className="upload-first-copy">{t("collect.paymentsUploadFirst")}</p>
+              <div className="evidence-stack">
+                <EvidenceUpload
+                  category="telecom"
+                  sessionId={data.session_id}
+                  onExtracted={applyExtraction}
+                  sampleUrl="/samples/telecom-demo.pdf"
+                  sampleFileName="telecom-demo.pdf"
+                />
+                <EvidenceUpload
+                  category="insurance"
+                  sessionId={data.session_id}
+                  onExtracted={applyExtraction}
+                  sampleUrl="/samples/insurance-demo.pdf"
+                  sampleFileName="insurance-demo.pdf"
+                />
+              </div>
+              {!showPaymentFields && (
+                <button
+                  className="path-action"
+                  type="button"
+                  aria-expanded="false"
+                  aria-controls="payment-direct-fields"
+                  onClick={() => { setShowPaymentFields(true); setError(""); }}
+                >
+                  {t("collect.directEntry")}
+                </button>
+              )}
+              {showPaymentFields && (
+                <div className="manual-fields" id="payment-direct-fields">
+                  <label>{t("collect.telecomMonths")}<input type="number" min="0" max="600" required value={data.telecom_paid_months} onChange={(event) => setNumber("telecom_paid_months", event.target.value)} /></label>
+                  <label>{t("collect.insuranceMonths")}<input type="number" min="0" max="600" required value={data.insurance_paid_months} onChange={(event) => setNumber("insurance_paid_months", event.target.value)} /></label>
+                </div>
+              )}
             </fieldset>
           )}
           {step === 3 && (
             <fieldset>
               <legend id="step-title">{t("collect.remittanceQuestion")}</legend>
-              <div className="split-fields">
-                <label>{t("collect.remittanceAmount")}<input type="number" min="0" required value={data.remittance_monthly_amount} onChange={(event) => setNumber("remittance_monthly_amount", event.target.value)} /></label>
-                <label>{t("collect.currency")}<select value={data.remittance_currency} onChange={(event) => setData({ ...data, remittance_currency: event.target.value })}>{CURRENCIES.map((currency) => <option key={currency}>{currency}</option>)}</select></label>
-              </div>
-              <label>{t("collect.remittanceMonths")}<input type="number" min="0" max="600" required value={data.remittance_months} onChange={(event) => setNumber("remittance_months", event.target.value)} /></label>
-              <EvidenceUpload category="remittance" sessionId={data.session_id} onExtracted={applyExtraction} />
+              {noRemittance ? (
+                <div className="empty-path" role="status">
+                  <p>{t("collect.noRemittanceSelected")}</p>
+                  <button type="button" className="path-action" onClick={() => setNoRemittance(false)}>{t("collect.changeSelection")}</button>
+                </div>
+              ) : (
+                <>
+                  <p className="upload-first-copy">{t("collect.remittanceUploadFirst")}</p>
+                  <EvidenceUpload
+                    category="remittance"
+                    sessionId={data.session_id}
+                    onExtracted={applyExtraction}
+                    sampleUrl="/samples/remittance-demo.pdf"
+                    sampleFileName="remittance-demo.pdf"
+                  />
+                  <div className="path-actions">
+                    {!showRemittanceFields && (
+                      <button
+                        className="path-action"
+                        type="button"
+                        aria-expanded="false"
+                        aria-controls="remittance-direct-fields"
+                        onClick={() => { setShowRemittanceFields(true); setError(""); }}
+                      >
+                        {t("collect.directEntry")}
+                      </button>
+                    )}
+                    {!hasRemittanceEvidence && <button className="path-action" type="button" onClick={selectNoRemittance}>{t("collect.noRemittance")}</button>}
+                  </div>
+                  {showRemittanceFields && (
+                    <div className="manual-fields" id="remittance-direct-fields">
+                      <div className="split-fields">
+                        <label>{t("collect.remittanceAmount")}<input type="number" min="0" required value={data.remittance_monthly_amount} onChange={(event) => setNumber("remittance_monthly_amount", event.target.value)} /></label>
+                        <label>{t("collect.currency")}<select value={data.remittance_currency} onChange={(event) => setData({ ...data, remittance_currency: event.target.value })}>{CURRENCIES.map((currency) => <option key={currency}>{currency}</option>)}</select></label>
+                      </div>
+                      <label>{t("collect.remittanceMonths")}<input type="number" min="0" max="600" required value={data.remittance_months} onChange={(event) => setNumber("remittance_months", event.target.value)} /></label>
+                    </div>
+                  )}
+                </>
+              )}
             </fieldset>
           )}
           {step === 4 && (

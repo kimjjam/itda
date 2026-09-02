@@ -10,6 +10,12 @@ interface Props {
 
 const strengthLabel = { strong: "strong", moderate: "moderate", limited: "limited" } as const;
 
+function externalSourceKey(sourceName: string) {
+  if (sourceName.includes("KOSIS")) return "report.externalSources.kosis";
+  if (sourceName.includes("한국수출입은행") || sourceName.includes("Korea Eximbank")) return "report.externalSources.exchange";
+  return null;
+}
+
 export default function ReportResult({ result, onRestart }: Props) {
   const { t } = useTranslation();
   const savings = result.matched_products.filter((product) => product.category === "저축은행_신용대출");
@@ -62,7 +68,10 @@ export default function ReportResult({ result, onRestart }: Props) {
       </section>
 
       <section className="source-status" aria-label="External data status">
-        {result.external_metrics.map((metric) => <span key={metric.name} className={metric.status}><i />{metric.source_name} · {t(`report.sourceStatus.${metric.status}`)}</span>)}
+        {result.external_metrics.map((metric) => {
+          const sourceKey = externalSourceKey(metric.source_name);
+          return <span key={metric.name} className={metric.status}><i />{sourceKey ? t(sourceKey) : metric.source_name} · {t(`report.sourceStatus.${metric.status}`)}</span>;
+        })}
       </section>
       <button className="restart-button" type="button" onClick={onRestart}><RotateCcw size={17} /> {t("report.newReport")}</button>
     </main>

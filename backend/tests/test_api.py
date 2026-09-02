@@ -1,5 +1,6 @@
 import json
 from io import BytesIO
+from pathlib import Path
 import unittest
 
 from fastapi.testclient import TestClient
@@ -7,6 +8,9 @@ import pymupdf
 from PIL import Image
 
 from app.main import app
+
+
+DEMO_SAMPLE_DIR = Path(__file__).resolve().parents[2] / "frontend" / "public" / "samples"
 
 
 SAMPLE = {
@@ -82,6 +86,24 @@ class ApiTest(unittest.TestCase):
                     "/api/documents",
                     data={"session_id": "8be146ac-8275-4ec9-a6c9-bb38ed97eb1e", "category": "employment"},
                     files={"file": (filename, content, content_type)},
+                )
+                self.assertEqual(response.status_code, 200)
+                self.assertEqual(response.json()["status"], "needs_review")
+
+    def test_bundled_demo_pdfs_use_the_document_pipeline(self) -> None:
+        categories = {
+            "employment-demo.pdf": "employment",
+            "telecom-demo.pdf": "telecom",
+            "insurance-demo.pdf": "insurance",
+            "remittance-demo.pdf": "remittance",
+        }
+        for filename, category in categories.items():
+            with self.subTest(filename=filename):
+                content = (DEMO_SAMPLE_DIR / filename).read_bytes()
+                response = self.client.post(
+                    "/api/documents",
+                    data={"session_id": "8be146ac-8275-4ec9-a6c9-bb38ed97eb1e", "category": category},
+                    files={"file": (filename, content, "application/pdf")},
                 )
                 self.assertEqual(response.status_code, 200)
                 self.assertEqual(response.json()["status"], "needs_review")

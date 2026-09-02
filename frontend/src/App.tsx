@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import LanguageToggle from "./components/LanguageToggle";
 import { ingestApplicant } from "./lib/api";
@@ -41,9 +41,18 @@ export default function App() {
   };
 
   const completeAnalysis = useCallback((analysis: AnalysisResult) => {
+    setApplicant((current) => current.language === language
+      ? current
+      : { ...current, language });
     setResult(analysis);
     setStage("report");
-  }, []);
+  }, [language]);
+
+  useEffect(() => {
+    if (stage !== "report" || applicant.language === language) return;
+    setApplicant((current) => current.language === language ? current : { ...current, language });
+    setStage("analysis");
+  }, [applicant.language, language, stage]);
 
   const restart = () => {
     setApplicant(newApplicant(language));

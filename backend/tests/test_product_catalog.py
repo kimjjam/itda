@@ -4,7 +4,7 @@ from unittest.mock import AsyncMock
 
 from app.models.schemas import Product
 from app.services.persistence_client import PersistenceReadError
-from app.services.product_catalog import load_matched_products, match_products
+from app.services.product_catalog import FALLBACK_CATALOG, load_matched_products, match_products
 
 
 class ProductCatalogTest(unittest.IsolatedAsyncioTestCase):
@@ -23,6 +23,18 @@ class ProductCatalogTest(unittest.IsolatedAsyncioTestCase):
     def test_localizes_match_reason(self) -> None:
         reason = match_products("E-9", "vi")[0].match_reason
         self.assertIn("Thị thực E-9", reason)
+
+    def test_localizes_vietnamese_product_details_for_fallback_and_loaded_catalog(self) -> None:
+        for products in (
+            match_products("E-9", "vi"),
+            match_products("E-9", "vi", [FALLBACK_CATALOG[0]]),
+        ):
+            product = products[0]
+            self.assertEqual(product.provider, "OK Savings Bank")
+            self.assertEqual(product.name, "Hi-OK Loan")
+            self.assertEqual(product.limit_text, "1–60 triệu KRW")
+            self.assertIn("%/năm", product.rate_text or "")
+            self.assertIn("chứng minh thu nhập", product.requirement_text or "")
 
     async def test_prefers_database_catalog_and_applies_common_matching(self) -> None:
         database_product = Product(

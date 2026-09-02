@@ -123,14 +123,27 @@ button { cursor: pointer; }
 .form-error { margin: 24px 0 0; color: #a73939; font-size: 13px; }
 .mobile-progress { display: none; }
 
+.upload-first-copy { margin: -10px 0 0; color: var(--muted); font-size: 13px; line-height: 1.7; }
+.evidence-stack, .manual-fields { display: grid; gap: 18px; }
+.path-actions { display: flex; flex-wrap: wrap; gap: 9px; }
+.path-action { width: fit-content; min-height: 40px; padding: 0 13px; border: 1px solid #cbd6df; border-radius: 10px; background: #fff; color: #506178; font-size: 12px; font-weight: 700; }
+.path-action:hover { border-color: #8aa9b1; color: var(--teal-700); }
+.path-action:focus-visible, .evidence-upload button:focus-visible { outline: 3px solid #8ccdc4; outline-offset: 2px; }
+.empty-path { padding: 14px 0; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; border-block: 1px solid var(--line); }
+.empty-path p { margin: 0; color: #506178; font-size: 13px; }
+
 .evidence-upload { padding: 13px 15px; border-radius: 11px; background: #f1f5f7; }
-.evidence-upload > button { width: 100%; display: flex; align-items: center; gap: 11px; padding: 0; border: 0; background: transparent; text-align: left; color: var(--navy-700); }
+.evidence-upload > .upload-trigger { width: 100%; display: flex; align-items: center; gap: 11px; padding: 0; border: 0; background: transparent; text-align: left; color: var(--navy-700); }
 .evidence-upload button > span { display: block; }
 .evidence-upload strong, .evidence-upload small { display: block; }
 .evidence-upload strong { font-size: 12px; }
 .evidence-upload small { margin-top: 2px; color: #758499; font-size: 10px; font-weight: 400; }
+.evidence-upload .sample-upload { margin: 11px 0 0 29px; min-height: 32px; padding: 0 10px; border: 1px solid #c5d5d9; border-radius: 8px; background: #fff; color: var(--teal-700); font-size: 11px; font-weight: 700; }
+.evidence-upload button:disabled { cursor: wait; opacity: 0.65; }
 .evidence-upload p { margin: 9px 0 0 29px; display: flex; align-items: center; gap: 5px; color: var(--muted); font-size: 11px; }
-.evidence-upload.success { background: #e9f4f0; }
+.evidence-upload.verified { background: #e9f4f0; }
+.evidence-upload.extracted, .evidence-upload.review { background: #f7f3e8; }
+.evidence-upload.extracted p, .evidence-upload.review p { color: #775f28; }
 .evidence-upload.error { background: #fbefef; }
 .evidence-upload.error p { color: #a73939; }
 .checkbox-field { padding: 22px; display: flex; gap: 14px; border-radius: 12px; background: #f1f5f7; cursor: pointer; }
